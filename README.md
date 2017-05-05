@@ -1,4 +1,7 @@
 # minio-cnpm
+
+ [![npm version](https://badge.fury.io/js/minio-cnpm.svg)](https://badge.fury.io/js/ntempl)
+
 minio wraper for [cnpmjs.org NFS](https://github.com/cnpm/cnpmjs.org/wiki/NFS-Guide)
 
 ## Usage
