@@ -6,18 +6,28 @@ function Client(options) {
   if (!(this instanceof Client)) {
     return new Client(options)
   }
-  this.bucket = options.bucket
+  this._mode = options.mode === "public" ? "public" : "private"
+  this._endPoint = options.endPoint
+  this._port = options.port || null
+  this._bucket = options.bucket
   this.client = new Minio.Client(options)
 }
 
 Client.prototype.upload = function (filepath, options) {
   return new Promise((resolve, reject) => {
     this.remove(options.key).then(() => {
-      this.client.fPutObject(this.bucket, trimKey(options.key), filepath, (err, etag) => {
+      this.client.fPutObject(this._bucket, trimKey(options.key), filepath, (err, etag) => {
         if (err) {
           reject(err)
         } else {
-          resolve({ key: trimKey(options.key) })
+          const {_endPoint, _port, _bucket, _mode} = this
+          if (_mode === 'public') {
+            resolve({
+              url: `http://${_endPoint}${!_port ? '' : `:${_port}`}/${_bucket}/${trimKey(options.key)}`
+            })
+          } else {
+            resolve({key: trimKey(options.key)})
+          }
         }
       })
     })
@@ -27,11 +37,11 @@ Client.prototype.upload = function (filepath, options) {
 Client.prototype.uploadBuffer = function (buf, options) {
   return new Promise((resolve, reject) => {
     this.remove(options.key).then(() => {
-      this.client.putObject(this.bucket, trimKey(options.key), buf, options.size, (err, etag) => {
+      this.client.putObject(this._bucket, trimKey(options.key), buf, options.size, (err, etag) => {
         if (err) {
           reject(err)
         } else {
-          resolve({ key: trimKey(options.key) })
+          resolve({key: trimKey(options.key)})
         }
       })
     })
@@ -40,7 +50,7 @@ Client.prototype.uploadBuffer = function (buf, options) {
 
 Client.prototype.download = function (key, filepath, options) {
   return new Promise((resolve, reject) => {
-    this.client.fGetObject(this.bucket, trimKey(key), filepath, err => {
+    this.client.fGetObject(this._bucket, trimKey(key), filepath, err => {
       if (err) {
         reject(err)
       } else {
@@ -52,7 +62,7 @@ Client.prototype.download = function (key, filepath, options) {
 
 Client.prototype.createDownloadStream = function (key, options) {
   return new Promise((resolve, reject) => {
-    this.client.getObject(this.bucket, trimKey(key), (err, dataStream) => {
+    this.client.getObject(this._bucket, trimKey(key), (err, dataStream) => {
       if (err) {
         reject(err)
       } else {
@@ -64,22 +74,15 @@ Client.prototype.createDownloadStream = function (key, options) {
 
 Client.prototype.remove = function (key) {
   return new Promise((resolve, reject) => {
-    this.client.removeObject(this.bucket, trimKey(key), err => {
+    this.client.removeObject(this._bucket, trimKey(key), err => {
       resolve()
     })
   })
 }
 
 Client.prototype.url = function (key) {
-  return new Promise((resolve, reject) => {
-    this.client.presignedGetObject(this.bucket, trimKey(key), 24 * 60 * 60, (err, presignedUrl) => {
-      if (err) {
-        reject(err)
-      } else {
-        resolve(presignedUrl)
-      }
-    })
-  })
+  const {_endPoint, _port, _bucket} = this
+  return `http://${_endPoint}${!_port ? '' : `:${_port}`}/${_bucket}/${trimKey(key)}`
 }
 
 function trimKey(key) {
