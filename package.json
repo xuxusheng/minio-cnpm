@@ -1,6 +1,6 @@
 {
   "name": "minio-cnpm",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "main": "index.js",
   "repository": "git@github.com:xuxusheng/minio-cnpm.git",
   "author": "'xusheng' <'20691718@qq.com'>",
